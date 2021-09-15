@@ -10,46 +10,59 @@ def find_student(excel_worksheet, student_id_col_index, first_student_row_index,
     return -1
 
 
-# load configs
-with open("config.yml", "r") as yml_file:
-    cfg = yaml.safe_load(yml_file)
+def load_config(file_dir):
+    with open(file_dir, "r") as yml_file:
+        cfg = yaml.safe_load(yml_file)
+    return cfg
 
-# open worksheet
-gc = gspread.service_account(filename=cfg['GENERAL']['credentials_dir'])
-google_sheet = gc.open(cfg['SHEET']['sheet_name'])
-google_worksheet = google_sheet.worksheet(cfg['SHEET']['worksheet_name'])
 
-# open excel file
-excel_sheet = xlrd.open_workbook(cfg['EXCEL']['file_dir'])
-excel_worksheet = excel_sheet.sheet_by_name(cfg['EXCEL']['worksheet_name'])
+def open_google_worksheet(cfg):
+    gc = gspread.service_account(filename=cfg['GENERAL']['credentials_dir'])
+    google_sheet = gc.open(cfg['SHEET']['sheet_name'])
+    google_worksheet = google_sheet.worksheet(cfg['SHEET']['worksheet_name'])
+    return google_worksheet
 
-if cfg['GENERAL']['use_grade_col_list_sheet']:
-    print('test')
-else:
+
+def open_excel_worksheet(cfg):
+    excel_sheet = xlrd.open_workbook(cfg['EXCEL']['file_dir'])
+    excel_worksheet = excel_sheet.sheet_by_name(cfg['EXCEL']['worksheet_name'])
+    return excel_worksheet
+
+
+def set_grade_of_a_student(student_id, cfg, google_worksheet, excel_worksheet, student_google_sheet_row_index):
+    student_row_index = find_student(excel_worksheet, cfg['EXCEL']['student_IDs_col_index'],
+                                     cfg['EXCEL']['first_student_row_index'],
+                                     cfg['GENERAL']['number_of_questions'], student_id)
+    for j in range(cfg['GENERAL']['number_of_questions']):
+        if cfg['GENERAL']['use_grade_col_list_excel']:
+            excel_question_col_index = cfg['EXCEL']['grade_cols'][j]
+            google_sheet_question_col_index = cfg['SHEET']['grade_cols'][j]
+        else:
+            excel_question_col_index = cfg['EXCEL']['first_question_col_index'] + \
+                                       j * cfg['EXCEL']['question_col_length']
+            google_sheet_question_col_index = cfg['SHEET']['first_question_col_index'] + \
+                                              j * cfg['SHEET']['question_col_length']
+        google_worksheet.update_cell(student_google_sheet_row_index, google_sheet_question_col_index,
+                                     excel_worksheet.cell(student_row_index, excel_question_col_index))
+
+
+def main():
+    # load configs
+    cfg = load_config("config.yml")
+
+    # open worksheet
+    google_worksheet = open_google_worksheet(cfg)
+
+    # open excel file
+    excel_worksheet = open_excel_worksheet(cfg)
+
+    # set grades
     for i in range(cfg['GENERAL']['number_of_questions']):
         student_id = google_worksheet.cell(cfg['SHEET']['first_student_row_index'] + i,
                                            cfg['SHEET']['student_IDs_col_index']).value
-        student_row_index = find_student(excel_worksheet, cfg['EXCEL']['student_IDs_col_index'],
-                                         cfg['EXCEL']['first_student_row_index'],
-                                         cfg['GENERAL']['number_of_questions'], student_id)
+        set_grade_of_a_student(student_id, cfg, google_worksheet, excel_worksheet,
+                               cfg['SHEET']['first_student_row_index'] + i)
 
 
-#######################
-# val = wsh.cell(2, 1).value
-# wsh.update_cell(4, 1, 'parham')
-# print(val)
-'''
-configs = {"GENERAL": {"number_of_questions": 10, "number_of_students": 200, "set_score": True, "set_delay": True,
-                       "use_col_list_excel": False, "use_col_list_sheet": False},
-           "EXCEL": {"file_dir": "", "worksheet_name": "", "student_IDs_col_index": 3, "first_student_row_index": 3, "first_delay_col_index": 5,
-                     "question_col_length": 5, "grade_cols": []},
-           "SHEET": {"sheet_name": "", "worksheet_name": "", "student_IDs_col_index": 3, "first_student_row_index": 3,
-                     "first_delay_col_index": 5, "question_col_length": 5, "grade_cols": []}}
-'''
-
-
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    main()
