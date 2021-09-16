@@ -29,10 +29,8 @@ def open_excel_worksheet(cfg):
     return excel_worksheet
 
 
-def set_grade_of_a_student(student_id, cfg, google_worksheet, excel_worksheet, student_google_sheet_row_index):
-    student_row_index = find_student(excel_worksheet, cfg['EXCEL']['student_IDs_col_index'],
-                                     cfg['EXCEL']['first_student_row_index'],
-                                     cfg['GENERAL']['number_of_questions'], student_id)
+def set_grade_of_a_student(cfg, google_worksheet, excel_worksheet, student_google_sheet_row_index,
+                           student_excel_row_index):
     for j in range(cfg['GENERAL']['number_of_questions']):
         if cfg['GENERAL']['use_grade_col_list_excel']:
             excel_question_col_index = cfg['EXCEL']['grade_cols'][j]
@@ -43,12 +41,25 @@ def set_grade_of_a_student(student_id, cfg, google_worksheet, excel_worksheet, s
             google_sheet_question_col_index = cfg['SHEET']['first_question_col_index'] + \
                                               j * cfg['SHEET']['question_col_length']
         google_worksheet.update_cell(student_google_sheet_row_index, google_sheet_question_col_index,
-                                     excel_worksheet.cell(student_row_index, excel_question_col_index))
+                                     excel_worksheet.cell(student_excel_row_index, excel_question_col_index))
+
+
+def set_delay_of_a_student(cfg, google_worksheet, excel_worksheet, student_google_sheet_row_index,
+                           student_excel_row_index):
+    delay = 0
+    for j in range(cfg['GENERAL']['number_of_questions']):
+        if cfg['GENERAL']['use_delay_col_list_excel']:
+            excel_question_col_index = cfg['EXCEL']['grade_cols'][j]
+        else:
+            excel_question_col_index = cfg['EXCEL']['first_question_col_index'] + \
+                                       j * cfg['EXCEL']['question_col_length']
+        delay = max(delay, 100 - excel_worksheet.cell(student_excel_row_index, excel_question_col_index))
+    google_worksheet.update_cell(student_google_sheet_row_index, cfg['SHEET']['delay_col_index'], delay)
 
 
 def main():
     # load configs
-    cfg = load_config("config.yml")
+    cfg = load_config('config.yml')
 
     # open worksheet
     google_worksheet = open_google_worksheet(cfg)
@@ -56,13 +67,24 @@ def main():
     # open excel file
     excel_worksheet = open_excel_worksheet(cfg)
 
-    # set grades
     for i in range(cfg['GENERAL']['number_of_questions']):
         student_id = google_worksheet.cell(cfg['SHEET']['first_student_row_index'] + i,
                                            cfg['SHEET']['student_IDs_col_index']).value
-        set_grade_of_a_student(student_id, cfg, google_worksheet, excel_worksheet,
-                               cfg['SHEET']['first_student_row_index'] + i)
+        student_excel_row_index = find_student(excel_worksheet, cfg['EXCEL']['student_IDs_col_index'],
+                                         cfg['EXCEL']['first_student_row_index'],
+                                         cfg['GENERAL']['number_of_questions'], student_id)
+        # set grades
+        if cfg['GENERAL']['set_score']:
+            set_grade_of_a_student(cfg, google_worksheet, excel_worksheet,
+                                   cfg['SHEET']['first_student_row_index'] + i, student_excel_row_index)
+        # set delays
+        if cfg['GENERAL']['set_delay']:
+            set_delay_of_a_student(cfg, google_worksheet, excel_worksheet,
+                                    cfg['SHEET']['first_student_row_index'] + i, student_excel_row_index)
 
 
 if __name__ == '__main__':
-    main()
+    cfg = load_config('config.yml')
+    cfg['SHEET']['delay_col_index'] = 0
+    with open('config.yml', "w") as yml_file:
+        yaml.safe_dump(cfg, yml_file)
