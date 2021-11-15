@@ -1,6 +1,6 @@
 EXCEL:
   delay_cols: []
-  file_dir: hw3.xls
+  file_dir: hw2.xls
   first_delay_col_index: 7
   first_question_col_index: 5
   first_student_row_index: 3
@@ -10,15 +10,15 @@ EXCEL:
   worksheet_name: Sheet
 GENERAL:
   credentials_dir: fop-f2021-grades-b924dec5656c.json
-  number_of_questions: 11
-  number_of_students: 250
+  number_of_questions: 7
+  number_of_students: 111
   set_delay: true
   set_score: true
   use_delay_col_list_excel: false
   use_grade_col_list_excel: false
   use_grade_col_list_sheet: false
 SHEET:
-  delay_col_index: 14
+  delay_col_index: 10
   first_delay_col_index: 5
   first_question_col_index: 2
   first_student_row_index: 4
@@ -26,4 +26,4 @@ SHEET:
   question_col_length: 1
   sheet_name: FOP F2021
   student_IDs_col_index: 1
-  worksheet_name: HW3
+  worksheet_name: HW2

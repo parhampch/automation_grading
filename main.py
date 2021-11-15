@@ -5,10 +5,12 @@ import time
 
 
 def find_student(excel_worksheet, student_id_col_index, first_student_row_index, number_of_students, student_id):
-    for i in range(number_of_students):
-        if excel_worksheet.cell(first_student_row_index + i, student_id_col_index).value == student_id:
-            return first_student_row_index + i
-    return -1
+    try:
+        for i in range(excel_worksheet.nrows):
+            if excel_worksheet.cell(first_student_row_index + i, student_id_col_index).value == student_id:
+                return first_student_row_index + i
+    except IndexError:
+        return -1
 
 
 def load_config(file_dir):
@@ -56,7 +58,7 @@ def set_delay_of_a_student(cfg, google_worksheet, excel_worksheet, student_googl
             excel_delay_col_index = cfg['EXCEL']['grade_cols'][j]
         else:
             excel_delay_col_index = cfg['EXCEL']['first_delay_col_index'] + \
-                                       j * cfg['EXCEL']['question_col_length']
+                                    j * cfg['EXCEL']['question_col_length']
         if excel_worksheet.cell_type(student_excel_row_index, excel_delay_col_index) == 0:
             temp = 100
         else:
@@ -77,12 +79,14 @@ def main():
 
     for i in range(cfg['GENERAL']['number_of_students']):
         if i != 0 and i % 5 == 0:
-            time.sleep(10)
+            time.sleep(30)
         student_id = google_worksheet.cell(cfg['SHEET']['first_student_row_index'] + i,
                                            cfg['SHEET']['student_IDs_col_index']).value
         student_excel_row_index = find_student(excel_worksheet, cfg['EXCEL']['student_IDs_col_index'],
-                                         cfg['EXCEL']['first_student_row_index'],
-                                         cfg['GENERAL']['number_of_students'], student_id)
+                                               cfg['EXCEL']['first_student_row_index'],
+                                               cfg['GENERAL']['number_of_students'], student_id)
+        if student_excel_row_index == -1:
+            continue
         print(student_id)
         # set grades
         if cfg['GENERAL']['set_score']:
@@ -91,7 +95,7 @@ def main():
         # set delays
         if cfg['GENERAL']['set_delay']:
             set_delay_of_a_student(cfg, google_worksheet, excel_worksheet,
-                                    cfg['SHEET']['first_student_row_index'] + i, student_excel_row_index)
+                                   cfg['SHEET']['first_student_row_index'] + i, student_excel_row_index)
 
 
 if __name__ == '__main__':
